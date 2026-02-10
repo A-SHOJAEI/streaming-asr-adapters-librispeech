@@ -1,0 +1,4 @@
+# Optional: KenLM beam-search decoding
+# Note: building kenlm may require a C++ toolchain.
+kenlm==0.3.0
+pyctcdecode==0.5.0

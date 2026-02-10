@@ -1,0 +1,81 @@
+# Full LibriSpeech configuration (train-clean-100 + dev/test clean/other).
+# WARNING: downloads are multi-GB.
+
+run_name: librispeech_full
+seed: 1337
+
+dataset:
+  kind: librispeech
+  root: data
+  raw_dir: data/raw
+  manifests_dir: data/manifests
+  sample_rate: 16000
+
+  librispeech_splits:
+    train: ["train-clean-100"]
+    dev: ["dev-clean", "dev-other"]
+    test: ["test-clean", "test-other"]
+
+  download_lm: false
+
+training:
+  device: auto
+  num_workers: 8
+  deterministic: true
+
+  baseline:
+    enabled: true
+    epochs: 30
+    batch_size: 16
+    lr: 1.0e-3
+    grad_clip: 1.0
+    model:
+      n_mels: 80
+      lstm_hidden: 512
+      lstm_layers: 3
+
+  wav2vec2_full:
+    enabled: true
+    # Choose a CTC model suitable for ASR fine-tuning; override as needed.
+    model_name_or_path: facebook/wav2vec2-base-960h
+    processor_name_or_path: facebook/wav2vec2-base-960h
+    epochs: 10
+    batch_size: 8
+    lr: 1.0e-5
+    grad_clip: 1.0
+
+  wav2vec2_peft:
+    enabled: true
+    model_name_or_path: facebook/wav2vec2-base-960h
+    processor_name_or_path: facebook/wav2vec2-base-960h
+    epochs: 10
+    batch_size: 8
+    lr: 3.0e-4
+    grad_clip: 1.0
+    lora:
+      r: 16
+      alpha: 32
+      dropout: 0.05
+      target_modules: ["q_proj", "k_proj", "v_proj", "out_proj", "fc1", "fc2"]
+
+checkpoints:
+  dir: artifacts/checkpoints
+
+lm:
+  enabled: false
+  arpa_gz: data/raw/lm/3-gram.pruned.1e-7.arpa.gz
+  lexicon: data/raw/lm/librispeech-lexicon.txt
+
+eval:
+  splits: ["dev", "test"]
+  decoding: ["greedy"]
+  streaming:
+    enabled: true
+    chunk_sec: [0.5, 1.0]
+    left_context_sec: [0.0, 2.0, 8.0]
+    warmup_chunks: 2
+    max_utts_per_split: null
+  quantization:
+    enabled: true
+    schemes: ["fp16_cuda", "fp32", "int8_dynamic_cpu"]
+    max_utts_per_split: 200

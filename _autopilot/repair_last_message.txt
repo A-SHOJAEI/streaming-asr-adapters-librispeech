@@ -1,0 +1,27 @@
+Changes made to get `make all` running end-to-end (fast smoke) on Ubuntu + Python 3.12 and to produce `artifacts/results.json` + `artifacts/report.md`:
+
+- Fixed the pip resolver failure by pinning HF deps compatibly:
+  - `requirements.txt`: changed `huggingface-hub` to `==0.34.0` (compatible with `transformers==4.57.6`), and bumped `peft` to `==0.18.1`.
+
+- Avoided huge CUDA-heavy PyTorch installs by using CPU wheels:
+  - `requirements.txt`: added `--extra-index-url https://download.pytorch.org/whl/cpu` and pinned `torch==2.10.0+cpu`, `torchaudio==2.10.0+cpu`.
+
+- Removed the new `torchaudio.save()`/`torchaudio.load()` runtime dependency on `torchcodec`:
+  - `asr/data/librispeech.py`: synthetic dataset now writes WAVs with `soundfile` instead of `torchaudio.save`.
+  - `asr/data/dataset.py`: audio loading now uses `soundfile` (+ a small linear resampler via `torch.nn.functional.interpolate`) instead of `torchaudio.load/resample`.
+
+- Fixed a Transformers API incompatibility in label collation:
+  - `asr/train/train_wav2vec2.py`: replaced deprecated/buggy `processor.as_target_processor()` path with `processor.tokenizer(...)` for labels.
+
+- Made LoRA usable with Wav2Vec2ForCTC in PEFT versions that don’t support a CTC task type:
+  - `asr/models/wav2vec2_ctc.py`: `apply_lora()` now returns `peft_model.base_model` (the `LoraModel`) so the forward path accepts `input_values=...` as expected.
+
+- Stabilized streaming chunking for wav2vec2 when the final chunk is a short remainder:
+  - `asr/eval/streaming.py`: pads short tail chunks up to `chunk_n` and drops logits corresponding to padded samples.
+
+- Prevented a quantization crash for PEFT models:
+  - `asr/eval/runner.py`: skips `int8_dynamic_cpu` quantization for `wav2vec2_peft` (PEFT LoRA A/B layers break under `quantize_dynamic` because their `.weight` becomes a packed/functional object).
+
+Result: `make all` now succeeds and writes:
+- `artifacts/results.json`
+- `artifacts/report.md`

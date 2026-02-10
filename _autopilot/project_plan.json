@@ -1,0 +1,73 @@
+{
+  "repo_name": "streaming-asr-adapters-librispeech",
+  "title": "Parameter-Efficient, Streaming-Ready ASR on LibriSpeech: Accuracy\u2013Latency\u2013Size Tradeoffs",
+  "one_liner": "Build a production-grade ASR training + evaluation stack and study whether adapter/LoRA fine-tuning plus LM decoding can match full fine-tuning while enabling low-latency streaming and deployment-friendly model sizes.",
+  "research_question": "On LibriSpeech, how close can parameter-efficient fine-tuning (LoRA/adapters) of a pretrained wav2vec 2.0 CTC model get to full fine-tuning in WER, and what are the measurable tradeoffs in (1) streaming latency (chunked inference), (2) decoding strategy (greedy vs LM beam search), and (3) deployability (int8 quantization/model size) at fixed compute?",
+  "dataset": {
+    "name": "LibriSpeech ASR corpus (train-clean-100 + dev/test clean/other) + optional LibriSpeech LM resources",
+    "urls": [
+      "https://www.openslr.org/resources/12/train-clean-100.tar.gz",
+      "https://www.openslr.org/resources/12/dev-clean.tar.gz",
+      "https://www.openslr.org/resources/12/dev-other.tar.gz",
+      "https://www.openslr.org/resources/12/test-clean.tar.gz",
+      "https://www.openslr.org/resources/12/test-other.tar.gz",
+      "https://www.openslr.org/resources/11/3-gram.pruned.1e-7.arpa.gz",
+      "https://www.openslr.org/resources/11/librispeech-lexicon.txt",
+      "https://www.openslr.org/resources/11/librispeech-vocab.txt"
+    ],
+    "license": "CC BY 4.0 (LibriSpeech audio+transcripts); Public domain (LibriSpeech LM resources)",
+    "approx_size_gb": 7.5,
+    "ingestion_notes": "Download and untar to data/; parse LibriSpeech *.trans.txt files into JSONL manifests with {utt_id, wav_path, text, speaker, chapter, duration_sec}. Use official splits (train-clean-100, dev-*, test-*). Optional: download pruned 3-gram ARPA + lexicon/vocab and build a CTC beam-search decoder with KenLM for LM-rescoring experiments. Everything must run from public URLs without credentials and with checksum verification."
+  },
+  "method": {
+    "model": "PyTorch wav2vec 2.0 Base CTC fine-tuning on train-clean-100, with a primary parameter-efficient variant (LoRA or bottleneck adapters injected into transformer blocks) and a streaming evaluation mode via chunked feature extraction + limited-context encoder forward passes (simulate online ASR by processing fixed-size audio chunks and measuring RTF/latency).",
+    "baseline": "Log-mel frontend + Conformer-CTC (or BiLSTM-CTC if you want a lighter baseline) trained from scratch on train-clean-100 with the same text normalization and evaluation pipeline; greedy decoding only.",
+    "ablations": [
+      "PEFT vs full fine-tuning: (A) LoRA/adapters with frozen backbone vs (B) full fine-tune of wav2vec2 encoder",
+      "Decoding: greedy vs beam search with the pruned 3-gram KenLM (and optional lexicon constraints)",
+      "Streaming constraints: chunk size (e.g., 0.5s vs 1.0s) and left-context window (short vs long) to quantify latency/WER tradeoffs",
+      "Deployability: int8 weight-only quantization (or dynamic quantization for CPU) vs fp16, measuring WER delta and throughput"
+    ],
+    "metrics": [
+      "WER on dev-clean/dev-other for model selection; final WER on test-clean/test-other",
+      "Real-time factor (RTF) and end-to-end latency under chunked/streaming simulation (GPU and CPU)",
+      "Model size (MB) and peak VRAM during training/inference",
+      "Training throughput (updates/sec) and total wall-clock time per experiment"
+    ]
+  },
+  "compute": {
+    "gpus": 2,
+    "expected_hours": 40
+  },
+  "risks": [
+    "Download speed and disk usage: even the 100h subset is multi-GB; full 960h scaling may require >60GB and longer training.",
+    "Streaming simulation for wav2vec2 is non-trivial (context handling); incorrect chunking can inflate WER or invalidate latency comparisons.",
+    "LoRA/adapters may underperform full fine-tuning on test-other unless hyperparameters (rank, target modules, LR schedule) are tuned.",
+    "KenLM/beam-search integration can be a time sink; keep it optional and ensure greedy-decoding results are solid first."
+  ],
+  "execution_steps": [
+    "Create repo `streaming-asr-adapters-librispeech` with a `Makefile` and `pyproject.toml` (or `requirements.txt`) using PyTorch + torchaudio + transformers + jiwer + kenlm (optional) + hydra/argparse configs.",
+    "Run `make setup` to create a virtualenv and install dependencies; verify GPUs with a short `torch.cuda.is_available()` sanity script.",
+    "Run `make data` to download LibriSpeech train-clean-100/dev/test splits from OpenSLR, extract into `data/raw/LibriSpeech/`, and generate JSONL manifests + text normalization artifacts in `data/manifests/`.",
+    "Run `make baseline_train` to train the from-scratch baseline (mel+Conformer-CTC) with deterministic seeds, logging, checkpointing, and periodic dev-clean/dev-other WER.",
+    "Run `make model_train_full` to fine-tune wav2vec2-CTC end-to-end; evaluate greedy-decoding WER and export the best checkpoint.",
+    "Run `make model_train_peft` to fine-tune wav2vec2-CTC with LoRA/adapters (frozen backbone); keep total updates comparable to full fine-tune; evaluate WER.",
+    "Run `make decode_lm` (optional) to download the pruned 3-gram ARPA + lexicon, build a KenLM-backed CTC beam decoder, and re-score dev/test to quantify LM gains.",
+    "Run `make streaming_eval` to benchmark chunk sizes/context windows for the best checkpoints and report WER vs RTF/latency; run `make quant_eval` to compare fp16 vs int8 and report WER/throughput/model size."
+  ],
+  "generated_at_utc": "2026-02-10 19:20:09 UTC",
+  "hardware": {
+    "cpu_cores": 24,
+    "cpu_threads": 48,
+    "ram_gb": 251.59,
+    "gpu_count": 2,
+    "gpu_names": [
+      "NVIDIA GeForce RTX 3090",
+      "NVIDIA GeForce RTX 3090"
+    ],
+    "gpu_vram_gb": [
+      24.0,
+      24.0
+    ]
+  }
+}

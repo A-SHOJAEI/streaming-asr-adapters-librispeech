@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtualenv
+.venv/
+
+# Artifacts/data
+artifacts/
+data/raw/
+data/manifests/
+data/cache/
+
+# Editor/OS
+.vscode/
+.idea/
+.DS_Store

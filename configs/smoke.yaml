@@ -1,0 +1,82 @@
+# Fast, end-to-end runnable configuration.
+# Uses a tiny synthetic dataset and a tiny wav2vec2 model (downloaded from Hugging Face).
+
+run_name: smoke
+seed: 1337
+
+dataset:
+  kind: synthetic
+  root: data/smoke
+  sample_rate: 16000
+  num_train: 64
+  num_dev: 16
+  num_test: 16
+  min_sec: 0.6
+  max_sec: 1.2
+  vocab: ["a", "b", "c", "d", "e", " "]
+
+  # LibriSpeech options (ignored for synthetic)
+  raw_dir: data/raw
+  manifests_dir: data/manifests
+  download_lm: false
+
+training:
+  device: auto   # auto|cpu|cuda
+  num_workers: 2
+  deterministic: true
+
+  baseline:
+    enabled: true
+    epochs: 1
+    batch_size: 8
+    lr: 1.0e-3
+    grad_clip: 1.0
+    model:
+      n_mels: 80
+      lstm_hidden: 128
+      lstm_layers: 2
+
+  wav2vec2_full:
+    enabled: true
+    model_name_or_path: hf-internal-testing/tiny-random-wav2vec2
+    processor_name_or_path: null
+    epochs: 1
+    batch_size: 2
+    lr: 1.0e-4
+    grad_clip: 1.0
+
+  wav2vec2_peft:
+    enabled: true
+    model_name_or_path: hf-internal-testing/tiny-random-wav2vec2
+    processor_name_or_path: null
+    epochs: 1
+    batch_size: 2
+    lr: 5.0e-4
+    grad_clip: 1.0
+    lora:
+      r: 4
+      alpha: 8
+      dropout: 0.05
+      target_modules: ["q_proj", "k_proj", "v_proj", "out_proj", "fc1", "fc2"]
+
+checkpoints:
+  dir: artifacts/checkpoints
+
+lm:
+  enabled: false
+  arpa_gz: data/raw/lm/3-gram.pruned.1e-7.arpa.gz
+  lexicon: data/raw/lm/librispeech-lexicon.txt
+
+eval:
+  splits: ["dev", "test"]
+  decoding: ["greedy"]
+  streaming:
+    enabled: true
+    chunk_sec: [0.5]
+    left_context_sec: [0.0, 1.0]
+    warmup_chunks: 1
+    max_utts_per_split: 8
+  quantization:
+    enabled: true
+    schemes: ["fp32", "int8_dynamic_cpu"]
+    max_utts_per_split: 8

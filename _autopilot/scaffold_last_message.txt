@@ -1,0 +1,27 @@
+Created a standalone, runnable research repo in `/home/alireza/research-autopilot/generated_projects/streaming-asr-adapters-librispeech` implementing the plan end-to-end:
+
+- Data download + verification (OpenSLR LibriSpeech ASR archives verified via `md5sum.txt`), extraction, and JSONL manifest generation: `asr/data/download.py`, `asr/data/librispeech.py`, `scripts/data.py`
+- Training (PyTorch) with reproducibility controls (seed + deterministic flags):
+  - Baseline: log-mel + BiLSTM CTC from scratch (greedy decoding): `asr/models/baseline_bilstm_ctc.py`, `asr/train/train_baseline.py`
+  - wav2vec2 CTC:
+    - Full fine-tune: `asr/train/train_wav2vec2.py`
+    - PEFT ablation: LoRA with frozen backbone: `asr/models/wav2vec2_ctc.py`, `asr/train/train_wav2vec2.py`
+- Evaluation producing `artifacts/results.json` (machine-readable) and `artifacts/report.md` (human report):
+  - WER (greedy; optional KenLM beam search via `requirements-lm.txt`)
+  - Streaming simulation (chunk size + left-context sweeps) for wav2vec2
+  - Deployability (fp16/fp32 vs CPU int8 dynamic quantization) + throughput (RTF) + model size
+  - Code: `asr/eval/runner.py`, `asr/eval/streaming.py`, `asr/eval/quant.py`, `scripts/eval.py`, `scripts/report.py`
+- Makefile targets (plus plan-aligned convenience targets): `Makefile`
+- PEP 668-safe venv bootstrap that does **not** rely on `ensurepip`:
+  - `python3 -m venv --without-pip .venv` + downloaded `get-pip.py`
+  - Installs via `.venv/bin/pip` only
+  - Script: `scripts/bootstrap_venv.sh`
+- Pinned deps: `requirements.txt` (core), `requirements-lm.txt` (optional LM decoding)
+- Fast default smoke config: `configs/smoke.yaml` (synthetic tiny dataset + tiny wav2vec2); full LibriSpeech config: `configs/full.yaml`
+
+Run:
+```bash
+make all
+# or full LibriSpeech:
+make all CONFIG=configs/full.yaml
+```
