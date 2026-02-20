@@ -84,9 +84,9 @@ WER (offline, greedy):
 
 | model | dev WER (N=16) | test WER (N=16) |
 | --- | --- | --- |
-| baseline | 1.0000 | 1.0000 |
+| baseline | 1.0370 | 1.0000 |
 | wav2vec2_full | 1.0000 | 1.0000 |
-| wav2vec2_peft | 5.6429 | 5.2222 |
+| wav2vec2_peft | 6.5926 | 7.3750 |
 
 Streaming simulation (chunk=0.5s; greedy; `eval.streaming.max_utts_per_split=8`):
 

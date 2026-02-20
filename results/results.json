@@ -1,0 +1,352 @@
+{
+  "config": {
+    "checkpoints": {
+      "dir": "artifacts/checkpoints"
+    },
+    "dataset": {
+      "download_lm": false,
+      "kind": "synthetic",
+      "manifests_dir": "data/manifests",
+      "max_sec": 1.2,
+      "min_sec": 0.6,
+      "num_dev": 16,
+      "num_test": 16,
+      "num_train": 64,
+      "raw_dir": "data/raw",
+      "root": "data/smoke",
+      "sample_rate": 16000,
+      "vocab": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        " "
+      ]
+    },
+    "eval": {
+      "decoding": [
+        "greedy"
+      ],
+      "quantization": {
+        "enabled": true,
+        "max_utts_per_split": 8,
+        "schemes": [
+          "fp32",
+          "int8_dynamic_cpu"
+        ]
+      },
+      "splits": [
+        "dev",
+        "test"
+      ],
+      "streaming": {
+        "chunk_sec": [
+          0.5
+        ],
+        "enabled": true,
+        "left_context_sec": [
+          0.0,
+          1.0
+        ],
+        "max_utts_per_split": 8,
+        "warmup_chunks": 1
+      }
+    },
+    "lm": {
+      "arpa_gz": "data/raw/lm/3-gram.pruned.1e-7.arpa.gz",
+      "enabled": false,
+      "lexicon": "data/raw/lm/librispeech-lexicon.txt"
+    },
+    "run_name": "smoke",
+    "seed": 1337,
+    "training": {
+      "baseline": {
+        "batch_size": 8,
+        "enabled": true,
+        "epochs": 1,
+        "grad_clip": 1.0,
+        "lr": 0.001,
+        "model": {
+          "lstm_hidden": 128,
+          "lstm_layers": 2,
+          "n_mels": 80
+        }
+      },
+      "deterministic": true,
+      "device": "auto",
+      "num_workers": 2,
+      "wav2vec2_full": {
+        "batch_size": 2,
+        "enabled": true,
+        "epochs": 1,
+        "grad_clip": 1.0,
+        "lr": 0.0001,
+        "model_name_or_path": "hf-internal-testing/tiny-random-wav2vec2",
+        "processor_name_or_path": null
+      },
+      "wav2vec2_peft": {
+        "batch_size": 2,
+        "enabled": true,
+        "epochs": 1,
+        "grad_clip": 1.0,
+        "lora": {
+          "alpha": 8,
+          "dropout": 0.05,
+          "r": 4,
+          "target_modules": [
+            "q_proj",
+            "k_proj",
+            "v_proj",
+            "out_proj",
+            "fc1",
+            "fc2"
+          ]
+        },
+        "lr": 0.0005,
+        "model_name_or_path": "hf-internal-testing/tiny-random-wav2vec2",
+        "processor_name_or_path": null
+      }
+    }
+  },
+  "experiments": {
+    "baseline": {
+      "quantization": {
+        "dev": {
+          "dev": {
+            "fp32": {
+              "model_size_mb": 2.40390682220459,
+              "num_utts": 8,
+              "rtf": 0.3390150431222811,
+              "wer": 1.25
+            },
+            "int8_dynamic_cpu": {
+              "model_size_mb": 2.3995065689086914,
+              "num_utts": 8,
+              "rtf": 0.17128729544263113,
+              "wer": 1.25
+            }
+          }
+        },
+        "test": {
+          "test": {
+            "fp32": {
+              "model_size_mb": 2.40390682220459,
+              "num_utts": 8,
+              "rtf": 0.12143945188951905,
+              "wer": 1.0
+            },
+            "int8_dynamic_cpu": {
+              "model_size_mb": 2.3995065689086914,
+              "num_utts": 8,
+              "rtf": 0.04027147137627565,
+              "wer": 1.0
+            }
+          }
+        }
+      },
+      "wer": {
+        "dev": {
+          "dev": {
+            "num_utts": 16,
+            "wer": 1.037037037037037
+          }
+        },
+        "test": {
+          "test": {
+            "num_utts": 16,
+            "wer": 1.0
+          }
+        }
+      }
+    },
+    "wav2vec2_full": {
+      "quantization": {
+        "dev": {
+          "dev": {
+            "fp32": {
+              "model_size_mb": 0.13638687133789062,
+              "num_utts": 8,
+              "rtf": 0.18671032887546438,
+              "wer": 1.0
+            },
+            "int8_dynamic_cpu": {
+              "model_size_mb": 0.13425922393798828,
+              "num_utts": 8,
+              "rtf": 0.11272546765820263,
+              "wer": 1.0
+            }
+          }
+        },
+        "test": {
+          "test": {
+            "fp32": {
+              "model_size_mb": 0.13638687133789062,
+              "num_utts": 8,
+              "rtf": 0.14874134543889853,
+              "wer": 1.0
+            },
+            "int8_dynamic_cpu": {
+              "model_size_mb": 0.13425922393798828,
+              "num_utts": 8,
+              "rtf": 0.45008465812339626,
+              "wer": 1.0
+            }
+          }
+        }
+      },
+      "streaming": {
+        "dev": {
+          "dev": {
+            "chunk_0.500_left_0.000": {
+              "avg_chunk_ms_mean": 19.462807563286333,
+              "chunk_sec": 0.5,
+              "left_context_sec": 0.0,
+              "num_utts": 8,
+              "rtf_mean": 0.10769203704886934,
+              "wer": 1.0
+            },
+            "chunk_0.500_left_1.000": {
+              "avg_chunk_ms_mean": 73.10815099845058,
+              "chunk_sec": 0.5,
+              "left_context_sec": 1.0,
+              "num_utts": 8,
+              "rtf_mean": 0.20059043371283986,
+              "wer": 1.0
+            }
+          }
+        },
+        "test": {
+          "test": {
+            "chunk_0.500_left_0.000": {
+              "avg_chunk_ms_mean": 71.73754275027022,
+              "chunk_sec": 0.5,
+              "left_context_sec": 0.0,
+              "num_utts": 8,
+              "rtf_mean": 0.22138004983640805,
+              "wer": 1.0
+            },
+            "chunk_0.500_left_1.000": {
+              "avg_chunk_ms_mean": 115.82145525062515,
+              "chunk_sec": 0.5,
+              "left_context_sec": 1.0,
+              "num_utts": 8,
+              "rtf_mean": 0.2868591670933219,
+              "wer": 1.0
+            }
+          }
+        }
+      },
+      "wer": {
+        "dev": {
+          "dev": {
+            "greedy": {
+              "num_utts": 16,
+              "wer": 1.0
+            }
+          }
+        },
+        "test": {
+          "test": {
+            "greedy": {
+              "num_utts": 16,
+              "wer": 1.0
+            }
+          }
+        }
+      }
+    },
+    "wav2vec2_peft": {
+      "quantization": {
+        "dev": {
+          "dev": {
+            "fp32": {
+              "model_size_mb": 0.16939258575439453,
+              "num_utts": 8,
+              "rtf": 0.31026141976040517,
+              "wer": 8.083333333333334
+            }
+          }
+        },
+        "test": {
+          "test": {
+            "fp32": {
+              "model_size_mb": 0.16939258575439453,
+              "num_utts": 8,
+              "rtf": 0.020368531428783972,
+              "wer": 5.714285714285714
+            }
+          }
+        }
+      },
+      "streaming": {
+        "dev": {
+          "dev": {
+            "chunk_0.500_left_0.000": {
+              "avg_chunk_ms_mean": 8.019906563731638,
+              "chunk_sec": 0.5,
+              "left_context_sec": 0.0,
+              "num_utts": 8,
+              "rtf_mean": 0.09282081027355644,
+              "wer": 7.5
+            },
+            "chunk_0.500_left_1.000": {
+              "avg_chunk_ms_mean": 60.44882968717502,
+              "chunk_sec": 0.5,
+              "left_context_sec": 1.0,
+              "num_utts": 8,
+              "rtf_mean": 0.12920397491366556,
+              "wer": 7.75
+            }
+          }
+        },
+        "test": {
+          "test": {
+            "chunk_0.500_left_0.000": {
+              "avg_chunk_ms_mean": 215.75837806176423,
+              "chunk_sec": 0.5,
+              "left_context_sec": 0.0,
+              "num_utts": 8,
+              "rtf_mean": 0.5361392243713151,
+              "wer": 5.285714285714286
+            },
+            "chunk_0.500_left_1.000": {
+              "avg_chunk_ms_mean": 51.985881936161604,
+              "chunk_sec": 0.5,
+              "left_context_sec": 1.0,
+              "num_utts": 8,
+              "rtf_mean": 0.3220097286222019,
+              "wer": 5.571428571428571
+            }
+          }
+        }
+      },
+      "wer": {
+        "dev": {
+          "dev": {
+            "greedy": {
+              "num_utts": 16,
+              "wer": 6.592592592592593
+            }
+          }
+        },
+        "test": {
+          "test": {
+            "greedy": {
+              "num_utts": 16,
+              "wer": 7.375
+            }
+          }
+        }
+      }
+    }
+  },
+  "meta": {
+    "cuda_available": false,
+    "platform": "Linux-6.17.0-14-generic-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "timestamp_unix": 1771568206,
+    "torch": "2.10.0+cpu"
+  },
+  "run_name": "smoke"
+}
